@@ -171,6 +171,7 @@ def lambda_handler(event, context):
     if('action' in event['body-json'] and event['body-json']['action'] == 'published'):
         branch_name = 'tags/%s' % event['body-json']['release']['tag_name']
         repo_name = full_name + '/release'
+        s3_path = repo_name
     else:
         repo_name = full_name
         try:
@@ -178,6 +179,7 @@ def lambda_handler(event, context):
             branch_name = event['body-json']['ref'].replace('refs/heads/', '').replace('refs/tags/', 'tags/')
         except:
             branch_name = 'master'
+        s3_path = full_name + '/' + branch_name
     try:
         # GitLab
         remote_url = event['body-json']['project']['git_ssh_url']
@@ -198,7 +200,7 @@ def lambda_handler(event, context):
         repo = create_repo(repo_path, remote_url, creds)
     pull_repo(repo, branch_name, remote_url, creds)
     zipfile = zip_repo(repo_path, repo_name)
-    push_s3(zipfile, repo_name, outputbucket)
+    push_s3(zipfile, s3_path, outputbucket)
     if cleanup:
         logger.info('Cleanup Lambda container...')
         shutil.rmtree(repo_path)
